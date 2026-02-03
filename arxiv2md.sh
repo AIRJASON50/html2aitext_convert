@@ -10,12 +10,14 @@ HTML_DIR="$SCRIPT_DIR/html"
 OUTPUT_DIR="$SCRIPT_DIR/output"
 
 if [ -z "$1" ]; then
-    echo "Usage: $0 <arxiv_id>"
-    echo "Example: $0 2502.04307"
-    exit 1
+    read -p "Enter arXiv ID (e.g. 2502.04307): " ARXIV_ID
+    if [ -z "$ARXIV_ID" ]; then
+        echo "Error: No arXiv ID provided"
+        exit 1
+    fi
+else
+    ARXIV_ID="$1"
 fi
-
-ARXIV_ID="$1"
 # Remove 'arXiv:' prefix if present
 ARXIV_ID="${ARXIV_ID#arXiv:}"
 ARXIV_ID="${ARXIV_ID#arxiv:}"
