@@ -1,0 +1,4 @@
+html/*
+output/*
+__pycache__/
+*.pyc
