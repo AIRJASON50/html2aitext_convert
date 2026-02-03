@@ -8,27 +8,33 @@ Convert arXiv HTML papers to AI-friendly text (Markdown + LaTeX math).
 ./arxiv2md.sh 2502.04307
 ```
 
-That's it! Output will be in `output/2502.04307.md`.
+Output: `output/2502.04307.md`
 
-## Features
+## Project Structure
 
-- One-command arXiv paper download and conversion
-- Preserves LaTeX math formulas (`$inline$`, `$$block$$`)
-- Converts structure to Markdown
-- Cleans equation tables to proper LaTeX format
-- 10-stage progressive HTML stripping
+```
+html2aitext_convert/
+├── src/
+│   ├── arxiv2html.py   # Download arXiv HTML
+│   └── html2md.py      # Convert HTML to Markdown
+├── html/               # Downloaded HTML files
+├── output/             # Converted Markdown files
+├── arxiv2md.sh         # Main entry script
+└── README.md
+```
 
 ## Usage
 
-### From arXiv ID (recommended)
+### One-command (recommended)
 ```bash
 ./arxiv2md.sh 2502.04307
-./arxiv2md.sh arXiv:2502.04307  # also works
+./arxiv2md.sh arXiv:2502.04307
 ```
 
-### From local HTML file
+### Step by step
 ```bash
-python html_to_md.py input.html output.md
+python src/arxiv2html.py 2502.04307 html/paper.html
+python src/html2md.py html/paper.html output/paper.md
 ```
 
 ## Output Format
@@ -42,4 +48,3 @@ python html_to_md.py input.html output.md
 ## Requirements
 
 - Python 3
-- curl
