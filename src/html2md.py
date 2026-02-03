@@ -26,6 +26,38 @@ def save_output(content: str, filepath: str):
     print(f"Saved: {filepath}")
 
 
+def extract_title(html: str) -> str:
+    """Extract paper title from HTML."""
+    # Try <h1 class="ltx_title">
+    match = re.search(r'<h1[^>]*class="[^"]*ltx_title[^"]*"[^>]*>(.*?)</h1>', html, re.DOTALL | re.IGNORECASE)
+    if match:
+        title = match.group(1)
+        title = re.sub(r'<[^>]+>', '', title)  # Remove tags
+        title = ' '.join(title.split())  # Normalize whitespace
+        return title
+
+    # Try <title>
+    match = re.search(r'<title[^>]*>(.*?)</title>', html, re.DOTALL | re.IGNORECASE)
+    if match:
+        title = match.group(1)
+        title = re.sub(r'\s*[|\-]\s*arXiv.*$', '', title, flags=re.IGNORECASE)  # Remove arXiv suffix
+        return title.strip()
+
+    return "untitled"
+
+
+def sanitize_filename(title: str) -> str:
+    """Convert title to safe filename."""
+    # Remove/replace invalid characters
+    filename = re.sub(r'[<>:"/\\|?*]', '', title)
+    filename = re.sub(r'\s+', '_', filename)
+    filename = filename.strip('_.')
+    # Truncate if too long
+    if len(filename) > 100:
+        filename = filename[:100].rsplit('_', 1)[0]
+    return filename or "untitled"
+
+
 # ============================================================================
 # Stage 1: Remove unwanted elements
 # ============================================================================
@@ -440,8 +472,9 @@ def convert_html_to_markdown(html: str, verbose: bool = True) -> str:
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python html_to_md.py <input.html> [output.md]")
+        print("Usage: python html2md.py <input.html> [output_dir]")
         print("\nConverts arXiv LaTeXML HTML papers to Markdown.")
+        print("Output filename will be based on paper title.")
         sys.exit(1)
 
     input_file = Path(sys.argv[1])
@@ -449,16 +482,30 @@ def main():
         print(f"Error: File not found: {input_file}")
         sys.exit(1)
 
-    if len(sys.argv) >= 3:
-        output_file = Path(sys.argv[2])
-    else:
-        output_file = input_file.with_suffix('.md')
+    html_content = load_html(input_file)
 
+    # Extract title for filename
+    title = extract_title(html_content)
+    safe_title = sanitize_filename(title)
+
+    # Determine output path
+    if len(sys.argv) >= 3:
+        output_dir = Path(sys.argv[2])
+        if output_dir.suffix == '.md':
+            # If full path with .md given, use as-is
+            output_file = output_dir
+        else:
+            # If directory given, use title as filename
+            output_dir.mkdir(parents=True, exist_ok=True)
+            output_file = output_dir / f"{safe_title}.md"
+    else:
+        output_file = input_file.with_name(f"{safe_title}.md")
+
+    print(f"Title: {title}")
     print(f"Input:  {input_file}")
     print(f"Output: {output_file}")
     print()
 
-    html_content = load_html(input_file)
     print(f"Loaded {len(html_content):,} characters\n")
 
     print("Converting:")
@@ -472,6 +519,9 @@ def main():
     h3_count = len(re.findall(r'^### ', markdown, re.MULTILINE))
     math_count = len(re.findall(r'\$[^$]+\$', markdown))
     print(f"\nStats: {h2_count} sections, {h3_count} subsections, {math_count} math expressions")
+
+    # Output title for shell script (last line)
+    print(f"\n__OUTPUT_FILE__:{output_file}")
 
 
 if __name__ == "__main__":

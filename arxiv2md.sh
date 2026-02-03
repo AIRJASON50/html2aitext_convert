@@ -23,14 +23,18 @@ ARXIV_ID="${ARXIV_ID#arXiv:}"
 ARXIV_ID="${ARXIV_ID#arxiv:}"
 
 HTML_FILE="$HTML_DIR/${ARXIV_ID}.html"
-MD_FILE="$OUTPUT_DIR/${ARXIV_ID}.md"
 
 # Step 1: Download HTML
 python3 "$SRC_DIR/arxiv2html.py" "$ARXIV_ID" "$HTML_FILE"
 
-# Step 2: Convert to Markdown
+# Step 2: Convert to Markdown (output filename based on paper title)
+echo ""
 echo "Converting to Markdown..."
-python3 "$SRC_DIR/html2md.py" "$HTML_FILE" "$MD_FILE"
+OUTPUT=$(python3 "$SRC_DIR/html2md.py" "$HTML_FILE" "$OUTPUT_DIR")
+echo "$OUTPUT"
+
+# Extract output file path
+MD_FILE=$(echo "$OUTPUT" | grep "__OUTPUT_FILE__:" | cut -d: -f2-)
 
 echo ""
 echo "Done! Output: $MD_FILE"
