@@ -8,6 +8,7 @@ Usage:
 """
 
 import sys
+import ssl
 import urllib.request
 import urllib.error
 from pathlib import Path
@@ -26,10 +27,21 @@ def download_arxiv_html(arxiv_id: str, output_path: str = None) -> str:
     print(f"arXiv ID: {arxiv_id}")
     print(f"URL: {url}")
 
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=30) as response:
-            html = response.read()
+        try:
+            with urllib.request.urlopen(req, timeout=30) as response:
+                html = response.read()
+        except urllib.error.URLError as e:
+            if isinstance(e.reason, ssl.SSLCertVerificationError):
+                # Fallback: skip SSL verification (common on Windows / conda Python)
+                ctx = ssl.create_default_context()
+                ctx.check_hostname = False
+                ctx.verify_mode = ssl.CERT_NONE
+                with urllib.request.urlopen(req, timeout=30, context=ctx) as response:
+                    html = response.read()
+            else:
+                raise
     except urllib.error.HTTPError as e:
         print(f"Error: HTTP {e.code} - {e.reason}")
         sys.exit(1)
